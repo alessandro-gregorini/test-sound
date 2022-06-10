@@ -47,7 +47,7 @@ export default class TestSound {
                 actor: {
                     transform: {
                         local: {
-                            scale: {x: 5, y: 5, z: 5 }
+                            scale: {x: 1, y: 1, z: 1 }
                         }
                     },
                     /*collider: {
