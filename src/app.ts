@@ -1,74 +1,76 @@
 import * as MRE from '@microsoft/mixed-reality-extension-sdk';
+import { AssetContainer, ButtonBehavior, Sound } from '@microsoft/mixed-reality-extension-sdk';
 
-export default class SoundTest {
+export default class TestSound {
+    private rootActor?: MRE.Actor = undefined;
+    private testSound?: MRE.Sound = undefined;
+    private testSoundUri = 
+    'https://cdn-content-ingress.altvr.com/uploads/audio_clip/audio/2019525137279222608/ogg_doorbell-1.ogg'
+    private assets: MRE.AssetContainer;
+    private button: MRE.Actor;
+    private ringbell: MRE.Actor;
 
-	private sound: MRE.Sound
-	private root: MRE.Actor
-	private asset: MRE.AssetContainer
-	private button: MRE.Actor
-	private text: MRE.Actor = null
-	private soundUrl = 
-	'https://cdn-content-ingress.altvr.com/uploads/audio_clip/audio/2019525137279222608/ogg_doorbell-1.ogg'
-
-	constructor(private context: MRE.Context) {
+    constructor (private context: MRE.Context) {
+        this.assets = new MRE.AssetContainer(this.context);
+    
 		this.context.onStarted(() => this.started());
-	}
-
-	private async loadSound() {
-		this.asset = new MRE.AssetContainer(this.context);
-        this.sound = this.asset.createSound('sound', { uri: this.soundUrl })
-		this.root = MRE.Actor.Create(this.context, {});
-		await this.sound.created
     }
 
-	private async started() {
-		this.text = MRE.Actor.Create(this.context, {
-			actor: {
-				name: 'Text',
-				transform: {
-					app: { position: { x: 0, y: 0.5, z: 0 } }
-				},
-				text: {
-					contents: "Sound Test",
-					anchor: MRE.TextAnchorLocation.MiddleCenter,
-					color: { r: 30 / 255, g: 206 / 255, b: 213 / 255 },
-					height: 0.3
-				}
-			}
+    private started() {
+        this.rootActor = MRE.Actor.Create(this.context, {
+            actor: {
+                name: 'Root Actor',
+            }
 		});
 
-		this.asset = new MRE.AssetContainer(this.context);
-		this.button = MRE.Actor.CreatePrimitive(this.asset,
-			{
-				definition: { shape: MRE.PrimitiveShape.Box},
-				actor: {
-					transform: {
-						local: {
-							scale: { x: 0.6, y: 0.6, z: 0.6 }
-						}
-					},
-					appearance: { enabled: true }
-				},
-				addCollider: true		
-			}
-		);
+        this.testSound = this.assets.createSound('testSound', { uri: this.testSoundUri });
 
-		this.button.created().then(() =>
-		this.button.setBehavior(MRE.ButtonBehavior).onClick(() => this.startSound()));
-		await Promise.all([this.loadSound()])
-	}
-
-	private startSound() {
-		this.root.startSound(this.sound.id, 
-			{	//looping è fondamentale sia true affinchè funzioni il suono
-				pitch : 0,
-				volume: 0.2,
-				looping: true,
-				paused: false,
-				doppler: 0.0,
-				spread: 0.7,
-				rolloffStartDistance: 2.5,
-				time: 30.0
-		})
-	}
+        this.assets = new MRE.AssetContainer(this.context);
+        this.button = MRE.Actor.CreatePrimitive(this.assets,
+            {
+                definition: { shape: MRE.PrimitiveShape.Box},
+                actor: {
+                    transform: {
+                        local: {
+                            scale: { x: 0.6, y: 0.6, z: 0.6 },
+                            position: { x: 0, y: 0, z: -30 }
+                        }
+                    },
+                    appearance: { enabled: false }
+                },
+                addCollider: true
+            }
+        );
+        this.ringbell = MRE.Actor.CreateFromLibrary(this.context,
+            {
+                resourceId: 'artifact: 2019670864705880739',
+                actor: {
+                    transform: {
+                        local: {
+                            scale: {x: 1, y: 1, z: 1 }
+                        }
+                    },
+                    /*collider: {
+                        enabled: true,
+                        geometry: {
+                            shape: MRE.ColliderType.Capsule,
+                        }
+                    }*/
+                } 
+            })
+        const hitButton = this.ringbell.setBehavior(ButtonBehavior);
+        hitButton.onClick(() => {
+            this.rootActor.startSound(this.testSound.id, 
+                {	//deve esserci almeno un parametro, anche se impostato al suo valore di default
+                    pitch : 0,
+                    volume: 0.2,
+                    looping: false,
+                    paused: false,
+                    doppler: 1.0,
+                    spread: 0.0,
+                    rolloffStartDistance: 1.0,
+                    time: 0
+            })
+        })
+    }
 }
